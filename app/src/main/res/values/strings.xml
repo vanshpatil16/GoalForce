@@ -1,0 +1,35 @@
+<resources>
+    <string name="app_name">Drift</string>
+    <string name="app_tagline">Detect the drift. Protect the intent.</string>
+    <string name="accessibility_service_label">Drift — intentional scrolling</string>
+    <string name="accessibility_service_description">Detects when your actual usage drifts away from what you said you wanted to do, so Drift can offer a gentle, context-aware nudge instead of blocking you.</string>
+
+    <!-- Intention flow -->
+    <string name="intent_title">What are you here for?</string>
+    <string name="intent_purpose_label">Purpose</string>
+    <string name="intent_purpose_hint">e.g. reply to DMs, watch one lecture, check the feed</string>
+    <string name="intent_duration_label">How long do you need?</string>
+    <string name="intent_kind_quick">Quick check</string>
+    <string name="intent_kind_long">Long-form / focused</string>
+    <string name="intent_kind_task">A specific task</string>
+    <string name="intent_kind_entertainment">Unwind / entertainment</string>
+    <string name="intent_start">Start session</string>
+
+    <!-- Intervention -->
+    <string name="intervention_overrun_title">You planned %1$d min. It\'s been %2$d.</string>
+    <string name="intervention_reentry_title">Back again so soon?</string>
+    <string name="intervention_stopping_point">This looks like a natural stopping point.</string>
+    <string name="intervention_exit_prompt">Ready to wrap up?</string>
+    <string name="intervention_breath_prompt">Take one slow breath before you continue.</string>
+    <string name="intervention_reflection_prompt">Was this what you came for?</string>
+    <string name="intervention_continue">Continue intentionally</string>
+    <string name="intervention_extend">Give me %1$d more min</string>
+    <string name="intervention_exit">I\'m done</string>
+    <string name="intervention_snooze">Not now</string>
+
+    <!-- Dashboard -->
+    <string name="nav_intent">Intent</string>
+    <string name="nav_home">Today</string>
+    <string name="nav_stats">Progress</string>
+    <string name="nav_settings">Settings</string>
+</resources>

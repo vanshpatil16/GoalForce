@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Simple "ripple / pause" mark: a filled circle with a drifting arc. -->
+    <path
+        android:fillColor="#3D5AFE"
+        android:pathData="M54,54m-42,0a42,42 0,1 1,84 0a42,42 0,1 1,-84 0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,30c-13.3,0 -24,10.7 -24,24s10.7,24 24,24c9.5,0 17.7,-5.5 21.6,-13.5l-6.6,-3.2c-2.6,5.1 -7.9,8.6 -14,8.6c-8.8,0 -16,-7.2 -16,-16s7.2,-16 16,-16c6.1,0 11.4,3.5 14,8.6l6.6,-3.2C71.7,35.5 63.5,30 54,30z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M70,44v12h-6v-12z" />
+</vector>
