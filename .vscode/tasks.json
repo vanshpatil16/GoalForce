@@ -1,0 +1,47 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Flutter: Run phone preview",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["run", "--dart-define=ATTENTION_OS_ALLOW_LAN_HTTP=true"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Flutter: Build LAN test APK",
+      "type": "shell",
+      "command": "flutter",
+      "args": [
+        "build",
+        "apk",
+        "--debug",
+        "--dart-define=ATTENTION_OS_ALLOW_LAN_HTTP=true"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Flutter: Run browser preview",
+      "type": "shell",
+      "command": "flutter",
+      "args": [
+        "run",
+        "-d",
+        "web-server",
+        "--web-port",
+        "5001",
+        "--no-web-resources-cdn"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
