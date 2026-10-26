@@ -1,8 +1,31 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+}
+
+// Resolve the Groq API key from (in order): root `.env`, `local.properties`,
+// then the GROQ_API_KEY environment variable. Never committed to source.
+fun groqApiKey(): String {
+    val envFile = rootProject.file(".env")
+    if (envFile.exists()) {
+        envFile.readLines().firstOrNull { it.trim().startsWith("GROQ_API_KEY=") }
+            ?.substringAfter('=')
+            ?.trim()
+            ?.trim('"', '\'')
+            ?.takeIf { it.isNotBlank() }
+            ?.let { return it }
+    }
+    val localProps = rootProject.file("local.properties")
+    if (localProps.exists()) {
+        val props = Properties()
+        localProps.inputStream().use { props.load(it) }
+        props.getProperty("groq.api.key")?.takeIf { it.isNotBlank() }?.let { return it }
+    }
+    return System.getenv("GROQ_API_KEY") ?: ""
 }
 
 android {
@@ -17,6 +40,7 @@ android {
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
+        buildConfigField("String", "GROQ_API_KEY", "\"${groqApiKey()}\"")
     }
 
     buildTypes {
@@ -40,6 +64,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -67,6 +92,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.tensorflow.lite)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

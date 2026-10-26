@@ -53,6 +53,7 @@ class IntentEngine {
     fun severity(kind: DriftKind): Int = when (kind) {
         DriftKind.ON_TRACK -> 0
         DriftKind.NATURAL_STOPPING -> 1
+        DriftKind.OPENED -> 2
         DriftKind.OVER_RUN -> 2
         DriftKind.COMPULSIVE_REENTRY -> 3
     }

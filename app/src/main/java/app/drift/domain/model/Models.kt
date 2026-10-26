@@ -49,6 +49,7 @@ enum class InterventionTemplate {
 /** How the user's actual usage diverged from their stated intent. */
 enum class DriftKind {
     ON_TRACK,
+    OPENED,
     OVER_RUN,
     COMPULSIVE_REENTRY,
     NATURAL_STOPPING,

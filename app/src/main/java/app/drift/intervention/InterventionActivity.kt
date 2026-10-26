@@ -1,5 +1,6 @@
 package app.drift.intervention
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,11 +11,13 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,10 +30,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.drift.DriftApp
 import app.drift.domain.model.DriftKind
 import app.drift.domain.model.InterventionTemplate
@@ -38,9 +44,9 @@ import app.drift.ui.theme.DriftTheme
 import kotlinx.coroutines.launch
 
 /**
- * The full-screen contextual intervention. Launched over the tracked app by the
- * accessibility service. It never hard-blocks: it offers a stopping point and
- * lets the user decide, which is what distinguishes this from a blocker.
+ * The full-screen intervention — styled after one sec: a breathing animation with
+ * "Continue to X" / "I don't want to open X". It never hard-blocks; it offers a
+ * mindful moment and lets the user decide.
  */
 class InterventionActivity : ComponentActivity() {
 
@@ -50,10 +56,10 @@ class InterventionActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val template = intent.getStringExtra(EXTRA_TEMPLATE)
             ?.let { runCatching { InterventionTemplate.valueOf(it) }.getOrNull() }
-            ?: InterventionTemplate.STOPPING_POINT
+            ?: InterventionTemplate.BREATH_PAUSE
         val drift = intent.getStringExtra(EXTRA_DRIFT)
             ?.let { runCatching { DriftKind.valueOf(it) }.getOrNull() }
-            ?: DriftKind.OVER_RUN
+            ?: DriftKind.OPENED
         val label = intent.getStringExtra(EXTRA_LABEL) ?: ""
         val purpose = intent.getStringExtra(EXTRA_PURPOSE) ?: ""
         val intended = intent.getIntExtra(EXTRA_INTENDED_MINUTES, 10)
@@ -68,11 +74,15 @@ class InterventionActivity : ComponentActivity() {
                     purpose = purpose,
                     intended = intended,
                     elapsed = elapsed,
-                    onDone = {
+                    onContinue = { finish() },
+                    onExit = {
                         container.appScope.launch { container.coordinator.finishSession(achieved = true) }
+                        val home = Intent(Intent.ACTION_MAIN)
+                            .addCategory(Intent.CATEGORY_HOME)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(home)
                         finish()
                     },
-                    onContinue = { finish() },
                     onExtend = { minutes ->
                         container.appScope.launch { container.coordinator.extendSession(minutes) }
                         finish()
@@ -102,15 +112,15 @@ private fun InterventionScreen(
     purpose: String,
     intended: Int,
     elapsed: Int,
-    onDone: () -> Unit,
     onContinue: () -> Unit,
+    onExit: () -> Unit,
     onExtend: (Int) -> Unit,
     onSnooze: () -> Unit,
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(app.drift.ui.theme.PastelBackgroundGradient),
     ) {
         Column(
             modifier = Modifier
@@ -119,40 +129,89 @@ private fun InterventionScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            when (template) {
-                InterventionTemplate.BREATH_PAUSE -> BreathCircle()
-                else -> Spacer(Modifier.height(8.dp))
-            }
+            BreathCircle()
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(36.dp))
             Text(
                 text = titleFor(template, drift, label, intended, elapsed),
-                style = MaterialTheme.typography.headlineSmall,
+                fontSize = 24.sp,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                 textAlign = TextAlign.Center,
+                color = app.drift.ui.theme.TextPrimary,
             )
             Spacer(Modifier.height(12.dp))
             Text(
                 text = bodyFor(template, label, purpose),
-                style = MaterialTheme.typography.bodyLarge,
+                fontSize = 15.sp,
+                lineHeight = 22.sp,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = app.drift.ui.theme.TextSecondary,
             )
             Spacer(Modifier.height(40.dp))
 
-            when (template) {
-                InterventionTemplate.EXIT_PROMPT -> {
-                    OutlinedButton(onClick = { onExtend(5) }) { Text("Give me 5 more min") }
-                    Spacer(Modifier.height(8.dp))
-                    Button(onClick = onDone) { Text("I'm done") }
-                }
-                else -> {
-                    Button(onClick = onContinue) { Text("Continue intentionally") }
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedButton(onClick = onDone) { Text("I'm done") }
+            // Primary Purple Pill Button
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+                    .shadow(8.dp, androidx.compose.foundation.shape.RoundedCornerShape(27.dp), spotColor = app.drift.ui.theme.AccentPurple)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(27.dp))
+                    .background(
+                        androidx.compose.ui.graphics.Brush.horizontalGradient(
+                            listOf(app.drift.ui.theme.AccentPurpleLight, app.drift.ui.theme.AccentPurple)
+                        )
+                    )
+                    .clickable { onContinue() },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (label.isNotEmpty()) "Continue to $label" else "Continue",
+                    color = Color.White,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    fontSize = 15.sp
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // White pill button
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+                    .shadow(4.dp, androidx.compose.foundation.shape.RoundedCornerShape(27.dp))
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(27.dp))
+                    .background(Color.White)
+                    .clickable { onExit() },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (label.isNotEmpty()) "I don't want to open $label" else "I'm done",
+                    color = app.drift.ui.theme.TextPrimary,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                    fontSize = 15.sp
+                )
+            }
+
+            if (drift == DriftKind.OVER_RUN || drift == DriftKind.COMPULSIVE_REENTRY) {
+                Spacer(Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(25.dp))
+                        .background(Color(0xFFEDE9FE))
+                        .clickable { onExtend(5) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Give me 5 more min",
+                        color = app.drift.ui.theme.AccentPurple,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
                 }
             }
-            Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = onSnooze) { Text("Not now") }
         }
     }
 }
@@ -161,19 +220,34 @@ private fun InterventionScreen(
 private fun BreathCircle() {
     val transition = rememberInfiniteTransition(label = "breath")
     val scale by transition.animateFloat(
-        initialValue = 0.7f,
+        initialValue = 0.8f,
         targetValue = 1.3f,
-        animationSpec = infiniteRepeatable(tween(3200, easing = LinearEasing), RepeatMode.Reverse),
+        animationSpec = infiniteRepeatable(tween(3400, easing = LinearEasing), RepeatMode.Reverse),
         label = "breathScale",
     )
     Box(
         modifier = Modifier
-            .size(160.dp)
+            .size(170.dp)
             .scale(scale)
-            .background(Color(0xFF7C9EFC), CircleShape),
+            .shadow(16.dp, CircleShape, spotColor = app.drift.ui.theme.AccentPurple)
+            .background(
+                androidx.compose.ui.graphics.Brush.radialGradient(
+                    listOf(
+                        Color(0xFFC0AFFE),
+                        app.drift.ui.theme.AccentPurpleLight,
+                        app.drift.ui.theme.AccentPurple
+                    )
+                ),
+                CircleShape
+            ),
         contentAlignment = Alignment.Center,
     ) {
-        Text("breathe", color = Color.White, style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = "breathe",
+            color = Color.White,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            fontSize = 18.sp
+        )
     }
 }
 
@@ -184,20 +258,17 @@ private fun titleFor(
     label: String,
     intended: Int,
     elapsed: Int,
-): String = when (template) {
-    InterventionTemplate.STOPPING_POINT -> "This looks like a natural stopping point."
-    InterventionTemplate.EXIT_PROMPT -> if (drift == DriftKind.OVER_RUN) "You planned $intended min. It's been $elapsed." else "Back again so soon?"
-    InterventionTemplate.BREATH_PAUSE -> "Take one slow breath before you continue."
-    InterventionTemplate.REFLECTION -> "Was this what you came for?"
-    InterventionTemplate.REWARD_NUDGE -> "You're on a roll. Keep your streak alive."
+): String = when {
+    template == InterventionTemplate.REFLECTION -> "Was this what you came for?"
+    drift == DriftKind.OVER_RUN -> "You planned $intended min. It's been $elapsed."
+    drift == DriftKind.COMPULSIVE_REENTRY -> "Back again so soon?"
+    else -> "It's time to take a deep breath…"
 }
 
 @Composable
-private fun bodyFor(template: InterventionTemplate, label: String, purpose: String): String = when (template) {
-    InterventionTemplate.REFLECTION ->
+private fun bodyFor(template: InterventionTemplate, label: String, purpose: String): String = when {
+    template == InterventionTemplate.REFLECTION && purpose.isNotBlank() ->
         "You came to \"$purpose\". Did you get what you needed?"
-    InterventionTemplate.REWARD_NUDGE ->
-        "Ending this on purpose keeps your streak going."
-    else ->
-        if (label.isNotEmpty()) "This is $label. It's okay to step away now." else "It's okay to step away now."
+    label.isNotEmpty() -> "You're about to open $label."
+    else -> "Pause for a moment before you continue."
 }

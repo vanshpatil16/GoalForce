@@ -51,6 +51,11 @@ class InterventionBandit(private val random: Random = Random.Default) {
         nowMs: Long,
         hasStreak: Boolean,
     ): List<InterventionTemplate> = when (driftKind) {
+        DriftKind.OPENED -> listOf(
+            InterventionTemplate.BREATH_PAUSE,
+            InterventionTemplate.REFLECTION,
+        )
+
         DriftKind.OVER_RUN -> listOf(
             InterventionTemplate.STOPPING_POINT,
             InterventionTemplate.EXIT_PROMPT,

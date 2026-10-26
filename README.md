@@ -71,6 +71,55 @@ content**. The ideas it contributes, and where they live here:
 6. **Streak + XP + wager** (`StreakManager`) — meet today's intent to keep (or
    double, via wager) your streak; a freeze absorbs a missed day.
 
+## Behavioural analysis & on-device ML
+
+Drift now learns about *you*, fully on-device (privacy-first, no backend):
+
+- **Account / profile tracking** — a personal profile (name, level, XP, streak)
+  with a persistent history of every session, intervention and notification.
+- **Notification click tracking** — every notification is logged as *posted* and,
+  when you tap it, *clicked* (`NotificationClickReceiver`). This powers
+  click-through-rate measurement.
+- **Notification-timing bandit** (`NotificationTimingBandit`) — an epsilon-greedy
+  contextual bandit over *hour-of-day* slots that learns when you're most
+  receptive (reward = did you click).
+- **Behavioural analysis** (`BehavioralAnalyzer`) — daily aggregates, an overrun
+  *trend* (linear-regression slope: are you improving?), your most-overrun app,
+  your most-effective intervention, and your best engagement hour.
+- **Level system** (`LevelSystem`) — sub-linear XP→level progression with warm
+  titles and daily encouragement, shown as an animated streak flame + progress
+  ring.
+
+## AI Partner (Assistant)
+
+The **Assistant** tab is a conversational coach that answers with *your* real,
+on-device data — surfacing the small signals that are easy to miss (e.g.
+"Instagram opened 4 times in 1 minute") — and grows a **Hermes-style memory**
+of you over time.
+
+- **Behavioural grounding** — every answer is built from a live `AttentionReport`
+  (opens today, top apps, heaviest burst, blocked short-form content, overruns,
+  compulsive re-entries) derived from a fine-grained `foreground_events` log.
+- **Memory** — durable facts you state (goals, preferences, opinions) are
+  extracted on-device (`MemoryExtractor`) and appended to a `memory.md` file
+  (`AssistantMemoryStore`), then injected into future prompts so the assistant
+  gets more personal.
+- **LLM** — `GroqClient` calls the Groq chat completions API (JDK-only HTTP,
+  no new dependency). With no key or network, it falls back to deterministic,
+  data-aware answers (`OfflineAssistant`).
+
+### Configuring the Groq key
+
+The Groq key is read at build time from the first of:
+
+1. `.env` (root, gitignored) — `GROQ_API_KEY=...`
+2. `local.properties` (gitignored) — `groq.api.key=...`
+3. the `GROQ_API_KEY` environment variable
+
+It is injected as `BuildConfig.GROQ_API_KEY`. Because it ends up inside the
+APK, this is intended for personal/debug use; a production build should proxy
+the call through a backend that holds the secret.
+
 ## Architecture
 
 ```

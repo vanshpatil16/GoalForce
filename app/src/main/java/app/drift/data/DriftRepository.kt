@@ -1,14 +1,21 @@
 package app.drift.data
 
 import app.drift.data.db.DriftDatabase
+import app.drift.data.db.ForegroundEventEntity
 import app.drift.data.db.InterventionEntity
+import app.drift.data.db.NotificationEventEntity
 import app.drift.data.db.SessionEntity
+import app.drift.data.db.SessionSummaryEntity
 import app.drift.data.db.UserIntentEntity
 import app.drift.domain.model.DriftKind
+import app.drift.domain.model.EventConfidence
+import app.drift.domain.model.ForegroundEvent
+import app.drift.domain.model.ForegroundEventKind
 import app.drift.domain.model.Intervention
 import app.drift.domain.model.InterventionTemplate
 import app.drift.domain.model.Session
 import app.drift.domain.model.SessionState
+import app.drift.domain.model.SessionSummary
 import app.drift.domain.model.UserIntent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +30,9 @@ class DriftRepository(private val db: DriftDatabase) {
     private val intentDao = db.intentDao()
     private val sessionDao = db.sessionDao()
     private val interventionDao = db.interventionDao()
+    private val notificationEventDao = db.notificationEventDao()
+    private val foregroundEventDao = db.foregroundEventDao()
+    private val sessionSummaryDao = db.sessionSummaryDao()
 
     private val _active = MutableStateFlow<ActiveSession?>(null)
     val active: StateFlow<ActiveSession?> = _active
@@ -31,6 +41,12 @@ class DriftRepository(private val db: DriftDatabase) {
     val sessions: Flow<List<Session>> = sessionDao.observeAll().map { l -> l.map { it.toModel() } }
     val interventions: Flow<List<Intervention>> =
         interventionDao.observeAll().map { l -> l.map { it.toModel() } }
+
+    val notificationEvents: Flow<List<app.drift.domain.model.NotificationEvent>> =
+        notificationEventDao.observeAll().map { l -> l.map { it.toModel() } }
+
+    val foregroundEvents: Flow<List<ForegroundEvent>> =
+        foregroundEventDao.observeAll().map { l -> l.map { it.toModel() } }
 
     suspend fun saveIntent(intent: UserIntent): Long =
         intentDao.insert(
@@ -119,6 +135,67 @@ class DriftRepository(private val db: DriftDatabase) {
     suspend fun interventionsForSession(sessionId: Long): List<Intervention> =
         interventionDao.forSession(sessionId).map { it.toModel() }
 
+    suspend fun recordNotificationPosted(channel: String): Long =
+        notificationEventDao.insert(
+            NotificationEventEntity(channel = channel, postedAt = System.currentTimeMillis(), clickedAt = null)
+        )
+
+    suspend fun recordNotificationClick(channel: String) {
+        val e = notificationEventDao.latestUnclicked(channel) ?: return
+        notificationEventDao.markClicked(e.id, System.currentTimeMillis())
+    }
+
+    suspend fun notificationEventsSnapshot(): List<app.drift.domain.model.NotificationEvent> =
+        notificationEventDao.all().map { it.toModel() }
+
+    /** Records a fine-grained foreground/block event, tagged with the session it occurred during. */
+    suspend fun recordForegroundEvent(
+        packageName: String,
+        label: String,
+        kind: ForegroundEventKind,
+        sessionId: Long? = null,
+        elapsedRealtimeMs: Long? = null,
+        confidence: EventConfidence = EventConfidence.OBSERVED,
+    ) {
+        foregroundEventDao.insert(
+            ForegroundEventEntity(
+                sessionId = sessionId,
+                packageName = packageName,
+                label = label,
+                kind = kind,
+                at = System.currentTimeMillis(),
+                elapsedRealtimeMs = elapsedRealtimeMs,
+                confidence = confidence,
+            )
+        )
+    }
+
+    suspend fun foregroundEventsSince(since: Long): List<ForegroundEvent> =
+        foregroundEventDao.since(since).map { it.toModel() }
+
+    suspend fun foregroundEventsSnapshot(): List<ForegroundEvent> =
+        foregroundEventDao.since(0L).map { it.toModel() }
+
+    suspend fun foregroundEventsForSession(sessionId: Long): List<ForegroundEvent> =
+        foregroundEventDao.forSession(sessionId).map { it.toModel() }
+
+    /** Drops event history older than [days] to keep the log bounded. */
+    suspend fun pruneForegroundEvents(days: Long) {
+        val before = System.currentTimeMillis() - days * 24L * 60L * 60L * 1000L
+        foregroundEventDao.prune(before)
+    }
+
+    // ---- Session summaries (derived analytics) ----
+    val recentSessionSummaries: Flow<List<SessionSummary>> =
+        sessionSummaryDao.observeRecent(30).map { l -> l.map { it.toModel() } }
+
+    suspend fun upsertSessionSummary(summary: SessionSummary) = sessionSummaryDao.upsert(summary.toEntity())
+
+    suspend fun sessionSummary(id: Long): SessionSummary? = sessionSummaryDao.byId(id)?.toModel()
+
+    suspend fun recentSessionSummariesSnapshot(limit: Int): List<SessionSummary> =
+        sessionSummaryDao.recent(limit).map { it.toModel() }
+
     private fun Session.toEntity() = SessionEntity(
         id = id,
         intentId = intentId,
@@ -131,5 +208,20 @@ class DriftRepository(private val db: DriftDatabase) {
         extendedMinutes = extendedMinutes,
         state = state,
         outcome = outcome,
+    )
+
+    private fun SessionSummary.toEntity() = SessionSummaryEntity(
+        sessionId = sessionId,
+        plannedDurationSeconds = plannedDurationSeconds,
+        actualDurationSeconds = actualDurationSeconds,
+        completionStatus = completionStatus,
+        restrictedAppForegroundSeconds = restrictedAppForegroundSeconds,
+        distractionCount = distractionCount,
+        restrictionAttemptCount = restrictionAttemptCount,
+        appOpenCount = appOpenCount,
+        focusScore = focusScore,
+        trackingCoverage = trackingCoverage,
+        xpEarned = xpEarned,
+        createdAt = createdAt,
     )
 }

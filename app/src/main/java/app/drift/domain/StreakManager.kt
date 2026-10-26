@@ -28,8 +28,7 @@ class StreakManager {
             // Achieved today.
             achieved -> {
                 val base = if (last == today.minusDays(1)) state.currentStreak + 1 else 1
-                val wagered = if (state.wagerActive) base + 2 else base
-                wagered
+                if (state.wagerActive) base + 2 else base
             }
 
             // Missed today, but a freeze is available.
@@ -46,14 +45,11 @@ class StreakManager {
             else -> state.freezesAvailable
         }
 
-        val xpGain = if (achieved && last != today) XP_PER_DAY + if (state.wagerActive) XP_WAGER_BONUS else 0 else 0
-
         return state.copy(
             currentStreak = newStreak,
             bestStreak = maxOf(newStreak, state.bestStreak),
             lastCompletedDay = if (achieved) today.toString() else state.lastCompletedDay,
             freezesAvailable = freezes,
-            xp = state.xp + xpGain,
             wagerActive = false, // wager resolves once per day
         )
     }
@@ -61,8 +57,6 @@ class StreakManager {
     fun hasActiveStreak(state: StreakState): Boolean = state.currentStreak >= 1
 
     companion object {
-        const val XP_PER_DAY = 10
-        const val XP_WAGER_BONUS = 10
         const val INITIAL_FREEZES = 2
     }
 }
@@ -72,6 +66,5 @@ data class StreakState(
     val bestStreak: Int = 0,
     val lastCompletedDay: String? = null,
     val freezesAvailable: Int = StreakManager.INITIAL_FREEZES,
-    val xp: Int = 0,
     val wagerActive: Boolean = false,
 )
