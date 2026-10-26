@@ -203,6 +203,49 @@ fun SettingsScreen(vm: DriftViewModel, modifier: Modifier = Modifier) {
                 }
             }
 
+            // Privacy & Screen Analysis Card
+            Card(
+                modifier = Modifier.fillMaxWidth().shadow(3.dp, androidx.compose.foundation.shape.RoundedCornerShape(20.dp)),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Text("Privacy & Screen Analysis", fontWeight = FontWeight.Bold, color = app.drift.ui.theme.TextPrimary)
+                    SettingsToggle(
+                        title = "Periodic screen analysis",
+                        subtitle = "Run local goal-alignment checks on a schedule without changing the main Drift focus flow.",
+                        checked = settings.screenAnalysisEnabled,
+                        onCheckedChange = { vm.setScreenAnalysisEnabled(it) },
+                    )
+                    SettingsToggle(
+                        title = "Privacy notice accepted",
+                        subtitle = "Confirm the app will only use local metadata and never store raw screenshots.",
+                        checked = settings.privacyNoticeAccepted,
+                        enabled = settings.screenAnalysisEnabled,
+                        onCheckedChange = { vm.setPrivacyNoticeAccepted(it) },
+                    )
+                    SettingsToggle(
+                        title = "External AI analysis",
+                        subtitle = "Allow reviewed, opt-in backend analysis through a secure proxy when configured.",
+                        checked = settings.externalAiAnalysisEnabled,
+                        enabled = settings.screenAnalysisEnabled && settings.privacyNoticeAccepted,
+                        onCheckedChange = { vm.setExternalAiAnalysisEnabled(it) },
+                    )
+                    Text(
+                        text = "Observation interval: ${settings.observationIntervalMinutes} min",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = app.drift.ui.theme.TextPrimary,
+                    )
+                    androidx.compose.material3.Slider(
+                        value = settings.observationIntervalMinutes.toFloat(),
+                        onValueChange = { vm.setObservationIntervalMinutes(it.toInt()) },
+                        valueRange = 1f..60f,
+                        steps = 58,
+                        enabled = settings.screenAnalysisEnabled,
+                    )
+                }
+            }
+
             // Content Blocking Card
             Card(
                 modifier = Modifier.fillMaxWidth().shadow(3.dp, androidx.compose.foundation.shape.RoundedCornerShape(20.dp)),
@@ -248,6 +291,7 @@ private fun SettingsToggle(
     title: String,
     subtitle: String,
     checked: Boolean,
+    enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit,
 ) {
     Row(
@@ -257,9 +301,13 @@ private fun SettingsToggle(
     ) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleSmall)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            )
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
     }
 }
 

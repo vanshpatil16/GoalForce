@@ -7,26 +7,44 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-// Resolve the Groq API key from (in order): root `.env`, `local.properties`,
-// then the GROQ_API_KEY environment variable. Never committed to source.
-fun groqApiKey(): String {
+// Resolve Groq API keys from (in order): root `.env`, `local.properties`,
+// then the GROQ_API_KEYS / GROQ_API_KEY environment variables. Multiple keys can
+// be supplied as a comma-separated list to rotate between them safely.
+fun groqApiKeys(): List<String> {
+    val parsed = linkedSetOf<String>()
+
+    fun addValues(raw: String?) {
+        raw ?: return
+        raw.split(',', ';', '\n', '\r')
+            .map { it.trim().trim('"', '\'') }
+            .filter { it.isNotBlank() }
+            .forEach { parsed += it }
+    }
+
     val envFile = rootProject.file(".env")
     if (envFile.exists()) {
-        envFile.readLines().firstOrNull { it.trim().startsWith("GROQ_API_KEY=") }
-            ?.substringAfter('=')
-            ?.trim()
-            ?.trim('"', '\'')
-            ?.takeIf { it.isNotBlank() }
-            ?.let { return it }
+        envFile.readLines().forEach { line ->
+            val trimmed = line.trim()
+            if (trimmed.startsWith("GROQ_API_KEY=") || trimmed.startsWith("GROQ_API_KEYS=")) {
+                addValues(trimmed.substringAfter('='))
+            }
+        }
     }
+
     val localProps = rootProject.file("local.properties")
     if (localProps.exists()) {
         val props = Properties()
         localProps.inputStream().use { props.load(it) }
-        props.getProperty("groq.api.key")?.takeIf { it.isNotBlank() }?.let { return it }
+        addValues(props.getProperty("groq.api.key"))
+        addValues(props.getProperty("groq.api.keys"))
     }
-    return System.getenv("GROQ_API_KEY") ?: ""
+
+    addValues(System.getenv("GROQ_API_KEYS"))
+    addValues(System.getenv("GROQ_API_KEY"))
+    return parsed.toList()
 }
+
+fun groqApiKey(): String = groqApiKeys().joinToString(",")
 
 android {
     namespace = "app.drift"

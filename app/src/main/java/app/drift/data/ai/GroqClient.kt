@@ -10,13 +10,26 @@ import java.net.URL
 
 /** Minimal Groq chat-completions client using Android's JDK and org.json. */
 class GroqClient(
-    private val apiKey: String,
+    private val apiKeys: String,
     private val model: String = "openai/gpt-oss-20b",
 ) {
+    private val keyPool: List<String> = apiKeys
+        .split(',', ';', '\n', '\r')
+        .map { it.trim().trim('"', '\'') }
+        .filter { it.isNotBlank() }
+        .distinct()
+
+    @Volatile
+    private var nextKeyIndex: Int = 0
 
     suspend fun chat(messages: List<ChatTurn>): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            if (apiKey.isBlank()) error("No Groq API key configured")
+            val availableKeys = keyPool.ifEmpty { listOf(apiKeys.trim()) }.filter { it.isNotBlank() }
+            if (availableKeys.isEmpty()) error("No Groq API key configured")
+
+            val currentKey = availableKeys[nextKeyIndex.mod(availableKeys.size)]
+            nextKeyIndex = (nextKeyIndex + 1) % availableKeys.size
+
             val body = JSONObject()
                 .put("model", model)
                 .put("messages", JSONArray().apply {
@@ -27,7 +40,7 @@ class GroqClient(
                 requestMethod = "POST"
                 setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("Accept", "application/json")
-                setRequestProperty("Authorization", "Bearer $apiKey")
+                setRequestProperty("Authorization", "Bearer $currentKey")
                 connectTimeout = 15_000
                 readTimeout = 40_000
                 doOutput = true

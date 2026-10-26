@@ -112,13 +112,15 @@ of you over time.
 
 The Groq key is read at build time from the first of:
 
-1. `.env` (root, gitignored) — `GROQ_API_KEY=...`
-2. `local.properties` (gitignored) — `groq.api.key=...`
-3. the `GROQ_API_KEY` environment variable
+1. `.env` (root, gitignored) — `GROQ_API_KEY=...` or `GROQ_API_KEYS=key1,key2,...`
+2. `local.properties` (gitignored) — `groq.api.key=...` or `groq.api.keys=key1,key2,...`
+3. the `GROQ_API_KEYS` / `GROQ_API_KEY` environment variables
 
-It is injected as `BuildConfig.GROQ_API_KEY`. Because it ends up inside the
-APK, this is intended for personal/debug use; a production build should proxy
-the call through a backend that holds the secret.
+It is injected as `BuildConfig.GROQ_API_KEY` as a comma-separated list. The app
+rotates through the configured keys on each request so a single invalid or
+expired key does not break the feature. Because the values end up inside the APK,
+this is intended for personal/debug use; a production build should proxy the
+call through a backend that holds the secret.
 
 ## Architecture
 

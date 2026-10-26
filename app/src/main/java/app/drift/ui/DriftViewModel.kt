@@ -173,6 +173,10 @@ class DriftViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch { container.settings.toggleBlockedApp(packageName, blocked) }
     fun toggleProtectedPath(appId: String, selected: Boolean) =
         viewModelScope.launch { container.settings.toggleProtectedContentApp(appId, selected) }
+    fun setScreenAnalysisEnabled(enabled: Boolean) = viewModelScope.launch { container.settings.setScreenAnalysisEnabled(enabled) }
+    fun setExternalAiAnalysisEnabled(enabled: Boolean) = viewModelScope.launch { container.settings.setExternalAiAnalysisEnabled(enabled) }
+    fun setPrivacyNoticeAccepted(accepted: Boolean) = viewModelScope.launch { container.settings.setPrivacyNoticeAccepted(accepted) }
+    fun setObservationIntervalMinutes(minutes: Int) = viewModelScope.launch { container.settings.setObservationIntervalMinutes(minutes) }
 
     /** Asks the AI partner a question; returns the reply (offline fallback if unreachable). */
     suspend fun askAssistant(question: String): String = container.assistantService.ask(question)

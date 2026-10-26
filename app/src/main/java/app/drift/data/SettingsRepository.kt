@@ -28,6 +28,10 @@ data class AppSettings(
     val contentBlockMode: String = "COMPLETE_BLOCK",
     val blockedApps: Set<String> = emptySet(),
     val protectedContentApps: Set<String> = ContentBlockCatalog.rules.map { it.appId }.toSet(),
+    val screenAnalysisEnabled: Boolean = false,
+    val externalAiAnalysisEnabled: Boolean = false,
+    val privacyNoticeAccepted: Boolean = false,
+    val observationIntervalMinutes: Int = 5,
 )
 
 class SettingsRepository(private val context: Context) {
@@ -47,6 +51,10 @@ class SettingsRepository(private val context: Context) {
             contentBlockMode = p[KEY_CONTENT_MODE] ?: "COMPLETE_BLOCK",
             blockedApps = p[KEY_BLOCKED_APPS] ?: emptySet(),
             protectedContentApps = p[KEY_PROTECTED_CONTENT_APPS] ?: ContentBlockCatalog.rules.map { it.appId }.toSet(),
+            screenAnalysisEnabled = p[KEY_SCREEN_ANALYSIS] ?: false,
+            externalAiAnalysisEnabled = p[KEY_EXTERNAL_AI_ANALYSIS] ?: false,
+            privacyNoticeAccepted = p[KEY_PRIVACY_NOTICE] ?: false,
+            observationIntervalMinutes = p[KEY_OBSERVATION_INTERVAL] ?: 5,
         )
     }
 
@@ -103,6 +111,12 @@ class SettingsRepository(private val context: Context) {
         val current = p[KEY_PROTECTED_CONTENT_APPS] ?: supported
         p[KEY_PROTECTED_CONTENT_APPS] = if (protected) current + appId else current - appId
     }
+    suspend fun setScreenAnalysisEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_SCREEN_ANALYSIS] = enabled }
+    suspend fun setExternalAiAnalysisEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_EXTERNAL_AI_ANALYSIS] = enabled }
+    suspend fun setPrivacyNoticeAccepted(accepted: Boolean) = context.dataStore.edit { it[KEY_PRIVACY_NOTICE] = accepted }
+    suspend fun setObservationIntervalMinutes(minutes: Int) = context.dataStore.edit {
+        it[KEY_OBSERVATION_INTERVAL] = minutes.coerceIn(1, 60)
+    }
 
     private companion object {
         val KEY_NOTIFICATIONS = booleanPreferencesKey("notifications")
@@ -124,5 +138,9 @@ class SettingsRepository(private val context: Context) {
         val KEY_CONTENT_MODE = stringPreferencesKey("content_mode")
         val KEY_BLOCKED_APPS = stringSetPreferencesKey("blocked_apps")
         val KEY_PROTECTED_CONTENT_APPS = stringSetPreferencesKey("protected_content_apps")
+        val KEY_SCREEN_ANALYSIS = booleanPreferencesKey("screen_analysis_enabled")
+        val KEY_EXTERNAL_AI_ANALYSIS = booleanPreferencesKey("external_ai_analysis_enabled")
+        val KEY_PRIVACY_NOTICE = booleanPreferencesKey("privacy_notice_accepted")
+        val KEY_OBSERVATION_INTERVAL = intPreferencesKey("observation_interval_minutes")
     }
 }
