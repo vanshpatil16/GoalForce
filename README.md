@@ -123,6 +123,17 @@ To try it on a device:
 2. Grant **Usage access** and enable the **Drift accessibility service** (Settings tab).
 3. Open your target app. Drift will offer a contextual nudge if you drift.
 
+### Camera landmark test
+
+The **Camera** tab is an opt-in, foreground-only test screen. Tap **Start camera test**
+to request camera permission and show the front-camera preview with the MediaPipe face
+mesh, eye/iris/mouth labels, EAR, MAR, and relative iris offsets. Processing stays on
+device and camera frames are not stored. Leaving the screen or stopping monitoring
+unbinds the camera. Android does not allow this app to keep camera analysis running
+while hidden, so these measurements are for in-app testing and are not used to control
+or interrupt another app. Gaze is a relative estimate, not screen-coordinate tracking;
+fatigue states are heuristics, not diagnoses.
+
 ## Roadmap (natural next steps)
 
 - **Personalized notification *timing*** — a second bandit over "when you're most

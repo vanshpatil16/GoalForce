@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Settings
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.drift.ui.screens.HomeScreen
+import app.drift.ui.screens.CameraLandmarkScreen
 import app.drift.ui.screens.IntentionScreen
 import app.drift.ui.screens.SettingsScreen
 import app.drift.ui.screens.StatsScreen
@@ -46,6 +48,7 @@ private val tabs = listOf(
     Tab("Intent", Icons.Outlined.Bolt),
     Tab("Today", Icons.Outlined.Home),
     Tab("Progress", Icons.Outlined.Insights),
+    Tab("Camera", Icons.Outlined.CameraAlt),
     Tab("Settings", Icons.Outlined.Settings),
 )
 
@@ -72,6 +75,7 @@ private fun DriftApp(vm: DriftViewModel) {
             0 -> IntentionScreen(vm, modifier)
             1 -> HomeScreen(vm, modifier)
             2 -> StatsScreen(vm, modifier)
+            3 -> CameraLandmarkScreen(modifier)
             else -> SettingsScreen(vm, modifier)
         }
     }

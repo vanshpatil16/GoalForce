@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.drift.domain.model.IntentKind
+import app.drift.audio.VoiceCoach
 import app.drift.ui.DriftViewModel
 
 private data class AppEntry(val packageName: String, val label: String)
@@ -82,7 +83,7 @@ fun IntentionScreen(vm: DriftViewModel, modifier: Modifier = Modifier) {
             listOf(5, 10, 15, 30, 45, 60).forEach { m ->
                 FilterChip(
                     selected = minutes == m,
-                    onClick = { minutes = m },
+                    onClick = { VoiceCoach.selection(context); minutes = m },
                     label = { Text("${m}m") },
                 )
             }
@@ -93,14 +94,14 @@ fun IntentionScreen(vm: DriftViewModel, modifier: Modifier = Modifier) {
             IntentKind.entries.forEach { k ->
                 FilterChip(
                     selected = kind == k,
-                    onClick = { kind = k },
+                    onClick = { VoiceCoach.selection(context); kind = k },
                     label = { Text(labelFor(k)) },
                 )
             }
         }
 
         Text("Where?", style = MaterialTheme.typography.titleMedium)
-        Button(onClick = { showPicker = true }) {
+        Button(onClick = { VoiceCoach.tap(context); showPicker = true }) {
             Text(target?.label ?: "Choose an app")
         }
 
@@ -109,6 +110,7 @@ fun IntentionScreen(vm: DriftViewModel, modifier: Modifier = Modifier) {
             onClick = {
                 val t = target ?: return@Button
                 vm.startIntent(purpose.ifBlank { t.label }, minutes, kind, t.packageName, t.label)
+                VoiceCoach.sessionStarted(context)
                 purpose = ""
             },
             enabled = target != null,

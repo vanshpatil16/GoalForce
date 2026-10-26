@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.drift.DriftApp
+import app.drift.audio.VoiceCoach
 import app.drift.domain.model.DriftKind
 import app.drift.domain.model.InterventionTemplate
 import app.drift.ui.theme.DriftTheme
@@ -58,6 +59,7 @@ class InterventionActivity : ComponentActivity() {
         val purpose = intent.getStringExtra(EXTRA_PURPOSE) ?: ""
         val intended = intent.getIntExtra(EXTRA_INTENDED_MINUTES, 10)
         val elapsed = intent.getIntExtra(EXTRA_ELAPSED_MINUTES, intended)
+        VoiceCoach.speak(this, spokenPrompt(template, drift, label, purpose, intended, elapsed))
 
         setContent {
             DriftTheme {
@@ -69,15 +71,17 @@ class InterventionActivity : ComponentActivity() {
                     intended = intended,
                     elapsed = elapsed,
                     onDone = {
+                        VoiceCoach.sessionCompleted(this)
                         container.appScope.launch { container.coordinator.finishSession(achieved = true) }
                         finish()
                     },
-                    onContinue = { finish() },
+                    onContinue = { VoiceCoach.tap(this); finish() },
                     onExtend = { minutes ->
+                        VoiceCoach.tap(this)
                         container.appScope.launch { container.coordinator.extendSession(minutes) }
                         finish()
                     },
-                    onSnooze = { finish() },
+                    onSnooze = { VoiceCoach.tap(this); finish() },
                 )
             }
         }
@@ -92,6 +96,14 @@ class InterventionActivity : ComponentActivity() {
         const val EXTRA_INTENDED_MINUTES = "intended"
         const val EXTRA_ELAPSED_MINUTES = "elapsed"
     }
+}
+
+private fun spokenPrompt(template: InterventionTemplate, drift: DriftKind, label: String, purpose: String, intended: Int, elapsed: Int): String = when (template) {
+    InterventionTemplate.EXIT_PROMPT -> if (drift == DriftKind.OVER_RUN) "Quick check-in. You planned $intended minutes, and it has been $elapsed. Want to wrap up?" else "Back again so soon? Is this still what you meant to do?"
+    InterventionTemplate.BREATH_PAUSE -> "Pause for a second. Take one slow breath before you continue."
+    InterventionTemplate.REFLECTION -> "You came to $purpose. Did you get what you needed?"
+    InterventionTemplate.REWARD_NUDGE -> "You're on a roll. Keep your streak alive."
+    InterventionTemplate.STOPPING_POINT -> if (label.isNotEmpty()) "Quick check. Is $label still where you want to be?" else "Quick check. Is this still what you want to be doing?"
 }
 
 @Composable

@@ -17,9 +17,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.drift.ui.DriftViewModel
+import app.drift.audio.VoiceCoach
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun HomeScreen(vm: DriftViewModel, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
     val active = vm.activeSession.collectAsStateWithLifecycle().value
     val streak = vm.streak.collectAsStateWithLifecycle().value
     val intents = vm.intents.collectAsStateWithLifecycle().value
@@ -50,7 +53,7 @@ fun HomeScreen(vm: DriftViewModel, modifier: Modifier = Modifier) {
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Button(onClick = { vm.finishActiveSession() }) { Text("End session") }
+                    Button(onClick = { VoiceCoach.speak(context, "Session wrapped. One step at a time."); vm.finishActiveSession() }) { Text("End session") }
                 } else {
                     Text("No active session", style = MaterialTheme.typography.titleMedium)
                     Text(

@@ -9,6 +9,10 @@
         tools:ignore="ProtectedPermissions" />
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-feature android:name="android.hardware.camera.front" android:required="false" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Lets us discover launcher apps so the user can pick targets to track. -->
@@ -63,6 +67,11 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
+
+        <service
+            android:name=".service.FatigueMonitorService"
+            android:exported="false"
+            android:foregroundServiceType="camera" />
 
         <!-- Re-schedules drift/streak notifications after reboot. -->
         <receiver

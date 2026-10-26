@@ -21,12 +21,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.drift.service.UsageStatsCache
 import app.drift.ui.DriftViewModel
+import app.drift.audio.VoiceCoach
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 @Composable
 fun SettingsScreen(vm: DriftViewModel, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val settings = vm.settings.collectAsStateWithLifecycle().value
     val streak = vm.streak.collectAsStateWithLifecycle().value
+    var voiceEnabled by remember { mutableStateOf(VoiceCoach.isEnabled(context)) }
 
     val usageAccess = UsageStatsCache.hasUsageAccess(context)
     val a11yEnabled = isAccessibilityEnabled(context)
@@ -46,6 +52,25 @@ fun SettingsScreen(vm: DriftViewModel, modifier: Modifier = Modifier) {
             actionLabel = if (usageAccess) "Granted" else "Grant",
             onAction = { context.startActivity(UsageStatsCache.usageAccessSettingsIntent()) },
         )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("Voice coach & sound effects", style = MaterialTheme.typography.titleMedium)
+                Text("Short voice prompts when sessions start, finish, or need a check-in.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(
+                checked = voiceEnabled,
+                onCheckedChange = { enabled ->
+                    if (enabled) VoiceCoach.selection(context)
+                    voiceEnabled = enabled
+                    VoiceCoach.setEnabled(context, enabled)
+                },
+            )
+        }
 
         PermissionRow(
             title = "Accessibility service",
